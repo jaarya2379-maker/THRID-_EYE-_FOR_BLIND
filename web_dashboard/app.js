@@ -367,14 +367,11 @@ function processHardwareMessage(message) {
   if (message.startsWith('DIST:')) {
     const rawDist = parseInt(message.split(':')[1], 10);
     if (!isNaN(rawDist) && rawDist >= 2 && rawDist <= 400) {
-      // 5-sample client-side moving median filter to reject outlier spikes
-      state.rollingDistanceBuffer.push(rawDist);
-      if (state.rollingDistanceBuffer.length > 5) state.rollingDistanceBuffer.shift();
-
-      const sorted = [...state.rollingDistanceBuffer].sort((a, b) => a - b);
-      const filteredDist = sorted[Math.floor(sorted.length / 2)];
-      updateDistance(filteredDist);
+      updateDistance(rawDist);
     }
+  } else if (message.startsWith('DOWN:')) {
+    const dwn = parseInt(message.split(':')[1], 10);
+    state.downDistance = dwn;
   } else if (message.startsWith('TRIGGER_AI:')) {
     const dist = parseInt(message.split(':')[1], 10);
     const now = Date.now();
@@ -388,8 +385,19 @@ function processHardwareMessage(message) {
       state.batteryPct = Math.max(0, Math.min(100, pct));
       if (batteryStatusText) batteryStatusText.textContent = `${state.batteryPct}%`;
     }
-  } else if (message.startsWith('EVENT:SOS_BUTTON')) {
+  } else if (message === 'EVENT:SOS_BUTTON') {
     triggerSosEmergency('Hardware tactile SOS button on glove pressed');
+  } else if (message === 'EVENT:DROP') {
+    announceStatus('Warning: Drop-off or stairs down detected.');
+    addHistoryRecord({
+      mode: 'sensor',
+      type: 'DROP_ALERT',
+      distance: state.currentDistance,
+      text: 'Downward sensor detected drop-off or stairs.',
+      thumb: ''
+    });
+  } else if (message === 'WARN:LOW_BATTERY') {
+    announceStatus('Warning: Hardware battery low.');
   } else if (message.startsWith('FAULT:')) {
     const fault = message.split(':')[1];
     triggerSensorFault(`Sensor Hardware Fault: ${fault}`);
@@ -409,23 +417,22 @@ function updateDistance(dist) {
   let safetyState = 'clear';
   let spokenStatus = 'Clear path ahead.';
 
-  if (dist <= 25) {
+  if (dist <= 50) {
     safetyState = 'danger';
     spokenStatus = `Emergency stop. Obstacle ${dist} centimeters ahead.`;
     hudStatusTag.textContent = 'Emergency Danger';
     hudStatusTag.className = 'absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md bg-rose-500/25 text-rose-300 border border-rose-500/40 whitespace-nowrap shadow-md';
     hapticBadge.textContent = 'Haptic: SOLID BUZZ';
-    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-rose-600/20 text-rose-900 border border-rose-600/30';
+    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-rose-600/30 text-rose-200 border border-rose-500/40';
 
-    vibratePhone([150, 50, 150]); // Vibrate phone in user's pocket
-    // Decoupled: obstacle proximity is a local hazard warning, NOT a false caregiver SOS
-  } else if (dist <= 60) {
+    vibratePhone([150, 50, 150]);
+  } else if (dist <= 100) {
     safetyState = 'caution';
     spokenStatus = `Caution. Object ${dist} centimeters ahead.`;
     hudStatusTag.textContent = 'Caution Near';
     hudStatusTag.className = 'absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md bg-amber-500/25 text-amber-300 border border-amber-500/40 whitespace-nowrap shadow-md';
     hapticBadge.textContent = 'Haptic: PULSING';
-    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-900 border border-amber-500/30';
+    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/30 text-amber-200 border border-amber-500/40';
 
     vibratePhone(40);
     state.dangerDurationSec = 0;
@@ -434,7 +441,7 @@ function updateDistance(dist) {
     hudStatusTag.textContent = 'Path Clear';
     hudStatusTag.className = 'absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 whitespace-nowrap shadow-md';
     hapticBadge.textContent = 'Haptic: IDLE';
-    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900/10 text-slate-700 border border-slate-900/15';
+    hapticBadge.className = 'text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900/80 text-zinc-300 border border-white/15';
     state.dangerDurationSec = 0;
   }
 
