@@ -1,5 +1,6 @@
 # macOS
 .DS_Store
+tests/native/test_logic
 .AppleDouble
 .LSOverride
 
@@ -48,3 +49,4 @@ yarn-error.log*
 *.sublime-project
 *.sublime-workspace
 .DS_Store
+tests/native/test_logic

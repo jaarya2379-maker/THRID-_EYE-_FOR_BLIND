@@ -84,10 +84,11 @@ def analyze_frame():
             contents=[image, ASSISTANT_PROMPT]
         )
 
-        guidance_text = response.text.strip() if response.text else "Path appears clear."
+        # Safety rule: Never assume path is clear if AI output is empty
+        guidance_text = response.text.strip() if (response.text and response.text.strip()) else "Caution: Vision inconclusive. Use cane."
         print(f"[AI Assessment]: {guidance_text}")
 
-        # Queue speech output through headphones/speakers
+        # Queue speech output
         tts_queue.put(guidance_text)
 
         return jsonify({

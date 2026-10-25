@@ -1,257 +1,246 @@
-/**
- * ============================================================================
- * Third Eye for the Blind — ESP32 WROOM DevKit Firmware (v3.0 Production)
- * ============================================================================
- * Features:
- * 1. 5-sample median filter with outlier rejection (eliminates multipath spikes)
- * 2. Non-blocking proportional haptic feedback (millis() state machine)
- * 3. Sensor fault detection & disconnection watchdog (FAULT:NO_ECHO / FAULT:DISCONNECTED)
- * 4. Dedicated tactile SOS emergency button on GPIO 4 (active LOW, debounced)
- * 5. Battery percentage telemetry on GPIO 34 (ADC1)
- * 6. Dual-sensor architectural support (primary forward + optional downward drop-off)
- * 7. Live Serial Telemetry protocol:
- *      DIST:<cm>
- *      RAW:<cm>
- *      FAULT:<type>
- *      EVENT:SOS_BUTTON
- *      BATTERY:<pct>
- *      TRIGGER_AI:<cm>
- * ============================================================================
+/*
+ * Third Eye for the Blind — ESP32 firmware v3.2
+ * Library: NimBLE-Arduino. Board: ESP32 Dev Module.
+ * Output lines (USB serial and BLE UART) are listed in section 3 of the handoff.
  */
 
-// --- Primary Forward-Facing Ultrasonic Sensor (HC-SR04) ---
-const int TRIG_PIN  = 5;   // Primary TRIG
-const int ECHO_PIN  = 18;  // Primary ECHO
+#include <Arduino.h>
+#include <NimBLEDevice.h>
+#include <esp_task_wdt.h>
+#include "third_eye_logic.h"
 
-// --- Optional Secondary Downward-Facing Drop-Off Sensor ---
-// Connect for curb / stair drop-off detection (disabled by default)
-#define ENABLE_DOWNWARD_SENSOR false
-const int TRIG_PIN_DOWN = 22;
-const int ECHO_PIN_DOWN = 23;
+using namespace te;
 
-// --- Tactile & Haptic Feedback ---
-const int MOTOR_PIN = 19;  // BC547 Base (Coin Vibration Motor)
+const int TRIG_PIN           = 5;
+const int ECHO_PIN           = 18; // via 1k/2k divider
+const int TRIG_PIN_DOWN      = 22;
+const int ECHO_PIN_DOWN      = 23; // via 1k/2k divider
+const int MOTOR_PIN          = 19; // BC547 base via 1k
+const int SOS_BUTTON_PIN     = 4;  // active LOW
+const int BATTERY_ADC_PIN    = 34;
 
-// --- Tactile SOS Push Button (Active LOW with internal pull-up) ---
-const int SOS_BUTTON_PIN = 4;
+#define ENABLE_DOWNWARD_SENSOR true // false if the down sensor is not wired
 
-// --- Battery Voltage ADC Input (GPIO 34 is ADC1_CH6) ---
-const int BATTERY_ADC_PIN = 34;
+const int AI_TRIGGER_DIST       = 60;    // cm
+const uint32_t FWD_TIMEOUT_US   = 9500;  // about 160 cm round trip
+const uint32_t DWN_TIMEOUT_US   = 12000; // about 2 m, slanted path to ground
+const uint32_t STEP_MS          = 25;    // spacing between pings
+const int GROUND_MARGIN         = 25;    // cm change counts as drop or step
+const uint32_t SOS_HOLD_MS      = 1500;
+const uint32_t AI_COOLDOWN_MS   = 4000;
+const uint32_t TELEMETRY_MS     = 100;
+const uint32_t BATTERY_MS       = 5000;
+const int DIV_RATIO             = 2;     // two equal battery resistors
+const int BATT_LOW_MV           = 3500;
 
-// --- Distance Thresholds (in centimeters) ---
-const int MAX_DISTANCE    = 150; // Detection boundary (1.5 m)
-const int AI_TRIGGER_DIST = 60;  // Proximity trigger boundary for camera vision
-const int CRITICAL_DIST   = 25;  // Emergency stop threshold (25 cm)
+// ---------- BLE UART (Nordic UART service) ----------
+#define NUS_SERVICE "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define NUS_TX      "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-// --- Timing & Rate Limits ---
-const unsigned long TELEMETRY_INTERVAL_MS = 100; // 10 Hz telemetry stream
-const unsigned long AI_COOLDOWN_MS        = 4000; // 4s minimum between automated AI triggers
-const unsigned long BATTERY_INTERVAL_MS   = 5000; // Battery report every 5s
-const unsigned long DEBOUNCE_DELAY_MS     = 50;   // SOS button debounce
+NimBLEServer* bleServer;
+NimBLECharacteristic* bleTx;
 
-// --- State Variables ---
-unsigned long lastTelemetryTime = 0;
-unsigned long lastAiTriggerTime = 0;
-unsigned long lastBatteryTime   = 0;
-unsigned long lastMotorToggle   = 0;
-bool motorState = false;
-
-// SOS Button Debounce State
-int lastButtonReading = HIGH;
-int buttonState = HIGH;
-unsigned long lastDebounceTime = 0;
-
-// Sensor Fault Tracking
-int consecutiveEchoFailures = 0;
-const int FAULT_THRESHOLD = 5;
-
-// ==========================================
-// 1. Raw Ultrasonic Measurement
-// ==========================================
-long measureRawEchoTimeUs(int trigPin, int echoPin) {
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-
-  // 25ms timeout (~400cm max range)
-  return pulseIn(echoPin, HIGH, 25000);
+void bleInit() {
+  NimBLEDevice::init("ThirdEye");
+  bleServer = NimBLEDevice::createServer();
+  NimBLEService* svc = bleServer->createService(NUS_SERVICE);
+  bleTx = svc->createCharacteristic(NUS_TX, NIMBLE_PROPERTY::NOTIFY);
+  svc->start();
+  NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
+  adv->addServiceUUID(NUS_SERVICE);
+  adv->start();
 }
 
-// ==========================================
-// 2. 5-Sample Median Filter (Noise & Multipath Rejection)
-// ==========================================
-long measureFilteredDistanceCm() {
-  const int SAMPLES = 5;
-  long rawDistances[SAMPLES];
-  int validCount = 0;
-
-  for (int i = 0; i < SAMPLES; i++) {
-    long duration = measureRawEchoTimeUs(TRIG_PIN, ECHO_PIN);
-    if (duration > 0) {
-      long d = duration * 0.0343 / 2;
-      // Filter out physical impossibilities (<2cm or >400cm)
-      if (d >= 2 && d <= 400) {
-        rawDistances[validCount++] = d;
-      }
-    }
-    delay(2); // Short spacing between sonic bursts
+void emit(const char* line) { // line must end with a newline
+  Serial.print(line);
+  if (bleServer && bleServer->getConnectedCount() > 0) {
+    bleTx->setValue((const uint8_t*)line, strlen(line));
+    bleTx->notify();
   }
+}
 
-  // Handle echo timeout / sensor disconnect
-  if (validCount == 0) {
-    consecutiveEchoFailures++;
-    if (consecutiveEchoFailures >= FAULT_THRESHOLD) {
-      Serial.println("FAULT:NO_ECHO_TIMEOUT");
-    }
-    return MAX_DISTANCE + 1; // Out of range safe fallback
+void emitf(const char* fmt, int v) {
+  char b[24];
+  snprintf(b, sizeof(b), fmt, v);
+  emit(b);
+}
+
+// ---------- State ----------
+Med3 fMed, dMed;
+int fwd = MAX_DISTANCE + 1, dwn = NO_DOWN, baseline = 0;
+uint8_t stepIdx = 0, stuckCnt = 0, dropCnt = 0, lowCnt = 0;
+bool echoStuck = false, dropAlert = false, lowObstacle = false, lowBatt = false;
+bool downEnabled = false, lowBattSent = false, prevDrop = false, sosFired = false;
+int battMv = 0, battPct = 100, prevAiDist = MAX_DISTANCE + 1;
+uint32_t confirmUntil = 0, sosPressStart = 0, lastAi = 0;
+
+// ---------- Ultrasonic ----------
+int readCm(int trig, int echo, uint32_t timeoutUs) { // -1 on timeout
+  digitalWrite(trig, LOW);  delayMicroseconds(3);
+  digitalWrite(trig, HIGH); delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  uint32_t t = pulseIn(echo, HIGH, timeoutUs);
+  if (t == 0) return -1;
+  int cm = t / 58;
+  return cm < 2 ? 2 : cm;
+}
+
+int calibrateGround() { // median of 15 readings, 0 = failed
+  int s[15];
+  for (int i = 0; i < 15; i++) {
+    int c = readCm(TRIG_PIN_DOWN, ECHO_PIN_DOWN, DWN_TIMEOUT_US);
+    s[i] = c < 0 ? NO_DOWN : c;
+    delay(40);
   }
-
-  consecutiveEchoFailures = 0;
-
-  // Simple insertion sort to find median
-  for (int i = 0; i < validCount - 1; i++) {
-    for (int j = i + 1; j < validCount; j++) {
-      if (rawDistances[j] < rawDistances[i]) {
-        long temp = rawDistances[i];
-        rawDistances[i] = rawDistances[j];
-        rawDistances[j] = temp;
-      }
+  for (int i = 0; i < 15; i++) {
+    for (int j = i; j > 0 && s[j - 1] > s[j]; j--) {
+      int t = s[j]; s[j] = s[j - 1]; s[j - 1] = t;
     }
   }
-
-  // Return middle element (median)
-  return rawDistances[validCount / 2];
+  return s[7] >= NO_DOWN ? 0 : s[7];
 }
 
-// ==========================================
-// 3. Battery Voltage Estimator
-// ==========================================
-int readBatteryPercentage() {
-  // 3.3V ADC with voltage divider for 3.7V LiPo (Full: 4.2V, Empty: 3.3V)
-  int rawAdc = analogRead(BATTERY_ADC_PIN);
-  float voltage = (rawAdc / 4095.0) * 3.3 * 2.0; // Assuming 1:1 voltage divider
-  int pct = (int)((voltage - 3.3) / (4.2 - 3.3) * 100.0);
-  if (pct < 0) pct = 0;
-  if (pct > 100) pct = 100;
-  return pct;
+void evalGround() {
+  if (baseline == 0) { dropAlert = lowObstacle = false; return; }
+  GroundState g = groundState(dwn, baseline, GROUND_MARGIN);
+  if (g == GROUND_DROP) { if (dropCnt < 5) dropCnt++; } else dropCnt = 0;
+  if (g == GROUND_LOW)  { if (lowCnt < 5)  lowCnt++;  } else lowCnt = 0;
+  dropAlert = dropCnt >= 2; // two readings in a row
+  lowObstacle = lowCnt >= 2;
 }
 
-// ==========================================
-// 4. Non-Blocking Haptic Vibration Motor Controller
-// ==========================================
-void updateHapticFeedback(long distance, unsigned long now) {
-  if (distance <= 0 || distance > MAX_DISTANCE) {
-    digitalWrite(MOTOR_PIN, LOW);
-    motorState = false;
-    return;
-  }
+void doStep() { // one ping per call: forward, forward, down
+  static const uint8_t SEQ[3] = {0, 0, 1};
+  uint8_t kind = downEnabled ? SEQ[stepIdx] : 0;
+  stepIdx = (stepIdx + 1) % 3;
 
-  // Danger Zone: Continuous solid vibration
-  if (distance <= CRITICAL_DIST) {
-    digitalWrite(MOTOR_PIN, HIGH);
-    motorState = true;
-    return;
-  }
-
-  // Caution Zone: Non-blocking pulsing frequency scaling with proximity
-  // Close (26cm) -> 40ms off interval; Far (150cm) -> 240ms off interval
-  int offInterval = map(distance, CRITICAL_DIST, MAX_DISTANCE, 40, 240);
-  int onInterval = 30; // 30ms tactile click
-
-  if (motorState && (now - lastMotorToggle >= onInterval)) {
-    digitalWrite(MOTOR_PIN, LOW);
-    motorState = false;
-    lastMotorToggle = now;
-  } else if (!motorState && (now - lastMotorToggle >= offInterval)) {
-    digitalWrite(MOTOR_PIN, HIGH);
-    motorState = true;
-    lastMotorToggle = now;
+  if (kind == 0) {
+    if (digitalRead(ECHO_PIN) == HIGH) { if (stuckCnt < 255) stuckCnt++; }
+    else stuckCnt = 0;
+    echoStuck = stuckCnt >= 10;
+    int cm = readCm(TRIG_PIN, ECHO_PIN, FWD_TIMEOUT_US);
+    if (cm < 0 || cm > MAX_DISTANCE) cm = MAX_DISTANCE + 1; // timeout counts as far
+    fwd = fMed.push(cm);
+  } else {
+    int cm = readCm(TRIG_PIN_DOWN, ECHO_PIN_DOWN, DWN_TIMEOUT_US);
+    dwn = dMed.push(cm < 0 ? NO_DOWN : cm);
+    evalGround();
   }
 }
 
-// ==========================================
-// 5. Tactile SOS Emergency Button Checker
-// ==========================================
-void checkSosButton(unsigned long now) {
-  int reading = digitalRead(SOS_BUTTON_PIN);
+void updateBattery() {
+  int mv = analogReadMilliVolts(BATTERY_ADC_PIN) * DIV_RATIO;
+  battMv = battMv == 0 ? mv : (battMv * 3 + mv) / 4;
+  battPct = constrain(map(battMv, 3300, 4200, 0, 100), 0, 100);
+  lowBatt = battMv < BATT_LOW_MV;
+}
 
-  if (reading != lastButtonReading) {
-    lastDebounceTime = now;
-  }
-
-  if ((now - lastDebounceTime) > DEBOUNCE_DELAY_MS) {
-    if (reading != buttonState) {
-      buttonState = reading;
-      // Active LOW button pressed
-      if (buttonState == LOW) {
-        // Haptic feedback pulse confirming SOS trigger
-        digitalWrite(MOTOR_PIN, HIGH);
-        delay(80);
-        digitalWrite(MOTOR_PIN, LOW);
-        Serial.println("EVENT:SOS_BUTTON");
-      }
+void handleSos(uint32_t now) { // hold 1.5 s, non-blocking
+  if (digitalRead(SOS_BUTTON_PIN) == LOW) {
+    if (sosPressStart == 0) sosPressStart = now;
+    else if (!sosFired && now - sosPressStart >= SOS_HOLD_MS) {
+      sosFired = true;
+      confirmUntil = now + 600;
+      emit("EVENT:SOS_BUTTON\n");
     }
+  } else {
+    sosPressStart = 0;
+    sosFired = false;
   }
-
-  lastButtonReading = reading;
 }
 
-// ==========================================
-// Setup & Main Loop
-// ==========================================
+void pulses(int n, int onMs, int offMs) { // blocking, setup only
+  for (int k = 0; k < n; k++) {
+    digitalWrite(MOTOR_PIN, HIGH); delay(onMs);
+    digitalWrite(MOTOR_PIN, LOW);  delay(offMs);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
-
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  pinMode(MOTOR_PIN, OUTPUT);
+  pinMode(TRIG_PIN, OUTPUT);           pinMode(ECHO_PIN, INPUT);
+  pinMode(TRIG_PIN_DOWN, OUTPUT);      pinMode(ECHO_PIN_DOWN, INPUT);
+  pinMode(MOTOR_PIN, OUTPUT);          digitalWrite(MOTOR_PIN, LOW);
   pinMode(SOS_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(BATTERY_ADC_PIN, INPUT);
+  analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);
+  dMed.fill(NO_DOWN);
+  bleInit();
+  updateBattery();
 
-  digitalWrite(MOTOR_PIN, LOW);
+  pulses(2, 100, 80); // booted
+  bool ok = false;    // cover forward sensor with palm within 3 s
+  uint32_t t0 = millis();
+  while (millis() - t0 < 3000) {
+    int cm = readCm(TRIG_PIN, ECHO_PIN, FWD_TIMEOUT_US);
+    if (cm >= 0 && cm <= 15) { ok = true; break; }
+    delay(30);
+  }
+  if (ok) pulses(1, 400, 0); else pulses(5, 60, 60);
+  delay(2000); // hand away, normal pose
 
-  // Power-on self-test (two short tactile pulses)
-  digitalWrite(MOTOR_PIN, HIGH);
-  delay(100);
-  digitalWrite(MOTOR_PIN, LOW);
-  delay(80);
-  digitalWrite(MOTOR_PIN, HIGH);
-  delay(100);
-  digitalWrite(MOTOR_PIN, LOW);
+  if (ENABLE_DOWNWARD_SENSOR) {
+    baseline = calibrateGround();
+    downEnabled = baseline > 0;
+    if (downEnabled) pulses(1, 400, 0); else pulses(5, 60, 60);
+  }
 
-  Serial.println("SYSTEM_READY:THIRD_EYE_V3");
+  emit("SYSTEM_READY:V3_2\n");
+
+#if ESP_ARDUINO_VERSION_MAJOR < 3
+  esp_task_wdt_init(5, true); // 5 s watchdog
+#endif
+  esp_task_wdt_add(NULL);
 }
 
 void loop() {
-  unsigned long now = millis();
+  static uint32_t lastStep = 0, lastTele = 0, lastBatt = 0;
+  uint32_t now = millis();
+  esp_task_wdt_reset();
 
-  // 1. Check tactile SOS button on glove
-  checkSosButton(now);
+  handleSos(now);
 
-  // 2. Measure filtered ultrasonic distance
-  long distance = measureFilteredDistanceCm();
-
-  // 3. Update non-blocking haptic feedback
-  updateHapticFeedback(distance, now);
-
-  // 4. Stream Telemetry to Web Guardian Dashboard at 10 Hz
-  if (now - lastTelemetryTime >= TELEMETRY_INTERVAL_MS) {
-    lastTelemetryTime = now;
-    Serial.printf("DIST:%ld\n", distance);
+  if (now - lastStep >= STEP_MS) {
+    lastStep = now;
+    doStep();
   }
 
-  // 5. Stream Battery status every 5 seconds
-  if (now - lastBatteryTime >= BATTERY_INTERVAL_MS) {
-    lastBatteryTime = now;
-    int batteryPct = readBatteryPercentage();
-    Serial.printf("BATTERY:%d\n", batteryPct);
+  int effective = fwd;
+  if (lowObstacle && effective > 60) effective = 60;
+
+  HapticInput h = { now, effective, dropAlert, echoStuck, lowBatt, now < confirmUntil };
+  digitalWrite(MOTOR_PIN, motorOn(h) ? HIGH : LOW); // local, no phone needed
+
+  if (now - lastTele >= TELEMETRY_MS) {
+    lastTele = now;
+    emitf("DIST:%d\n", fwd);
+    if (downEnabled) emitf("DOWN:%d\n", dwn);
+    if (echoStuck) emit("FAULT:ECHO_STUCK\n");
   }
 
-  // 6. Proximity AI Trigger with cooldown
-  if (distance <= AI_TRIGGER_DIST && (now - lastAiTriggerTime >= AI_COOLDOWN_MS)) {
-    lastAiTriggerTime = now;
-    Serial.printf("TRIGGER_AI:%ld\n", distance);
+  if (dropAlert && !prevDrop) emit("EVENT:DROP\n");
+  prevDrop = dropAlert;
+
+  if (now - lastBatt >= BATTERY_MS) {
+    lastBatt = now;
+    updateBattery();
+    emitf("BATTERY:%d\n", battPct);
+    if (lowBatt && !lowBattSent) {
+      emit("WARN:LOW_BATTERY\n");
+      lowBattSent = true;
+    }
+    if (!lowBatt) lowBattSent = false;
+  }
+
+  bool inZone = fwd <= AI_TRIGGER_DIST; // fire on zone entry, then every 4 s
+  bool entered = inZone && prevAiDist > AI_TRIGGER_DIST + 20;
+  if (inZone && (entered || now - lastAi >= AI_COOLDOWN_MS)) {
+    lastAi = now;
+    emitf("TRIGGER_AI:%d\n", fwd);
+  }
+  prevAiDist = fwd;
+
+  if (bleServer->getConnectedCount() == 0) { // keep advertising after a disconnect
+    NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
+    if (!adv->isAdvertising()) adv->start();
   }
 }

@@ -1,8 +1,18 @@
 # Third Eye AI — System Benchmark & Test Report
 
 **Evaluation Date:** October 2026  
-**System Tested:** Third Eye AI v3.0 (ESP32 DevKit + HC-SR04 Sensor + Coin Vibration Motor + Web Guardian Dashboard + Gemini 2.5 Flash)  
-**Test Suite Script:** [`tests/test_system_benchmarks.py`](tests/test_system_benchmarks.py)
+**System Tested:** Third Eye AI v3.2 (ESP32 DevKit + Dual HC-SR04 Sensors + Coin Vibration Motor + Web Guardian Dashboard + Gemini 2.5 Flash)  
+**Test Suite Scripts:**
+- Native Firmware Logic Tests: [`tests/native/test_logic.cpp`](tests/native/test_logic.cpp)
+- Software Simulation & State Machine Suite: [`tests/test_system_benchmarks.py`](tests/test_system_benchmarks.py)
+- Empirical Hardware Measurement Logger: [`tools/measure.py`](tools/measure.py)
+
+> [!NOTE]
+> **Methodology Notice (Finding F1):**  
+> Sections 1 and 2 report statistical baseline performance evaluated using the `Med3` algorithmic noise-rejection model with synthetic Gaussian variance. To capture real physical hardware measurements with a tape measure, use the bundled logger:
+> ```bash
+> python3 tools/measure.py --distance 50 --samples 30
+> ```
 
 ---
 

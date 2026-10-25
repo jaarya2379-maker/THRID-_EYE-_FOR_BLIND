@@ -501,6 +501,12 @@ function handleVoiceQuery(userQuestion) {
     return;
   }
 
+  // 2.5 Bluetooth Hardware Connection
+  if (/\b(connect bluetooth|connect hardware|connect glove|pair hardware|bluetooth)\b/i.test(text)) {
+    connectBleDevice();
+    return;
+  }
+
   // 3. Pause / Resume Co-pilot
   if (/\b(pause|stop looking|be quiet|stop)\b/i.test(text)) {
     pauseAutonomousVisionLoop(true);
@@ -794,6 +800,79 @@ if (btnSaveKey) {
     vibrate(50);
     speak(val ? "API key saved. Vision co-pilot ready." : "API key cleared.");
   });
+}
+
+// ==========================================
+// 12. Wireless BLE UART Connection (Nordic UART Service)
+// ==========================================
+const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let bleDevice = null;
+let bleCharacteristic = null;
+let bleBuffer = '';
+
+async function connectBleDevice() {
+  if (!navigator.bluetooth) {
+    speak("Bluetooth not supported in this browser. Use Chrome on Android or Bluefy on iOS.");
+    return;
+  }
+  try {
+    speak("Scanning for Third Eye hardware.");
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ThirdEye' }],
+      optionalServices: [NUS_SERVICE_UUID]
+    });
+    const server = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+    bleCharacteristic = await service.getCharacteristic(NUS_TX_UUID);
+    await bleCharacteristic.startNotifications();
+    bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+      const val = new TextDecoder().decode(event.target.value);
+      bleBuffer += val;
+      const lines = bleBuffer.split('\n');
+      bleBuffer = lines.pop(); // keep trailing partial
+      for (const line of lines) {
+        parseHwProtocolLine(line.trim());
+      }
+    });
+
+    const btnBle = document.getElementById('btnBleConnect');
+    if (btnBle) {
+      btnBle.className = 'w-10 h-10 rounded-full bg-sky-500 border border-white text-black flex items-center justify-center shadow-lg';
+    }
+    vibrate([60, 40, 60]);
+    speak("Third Eye hardware connected wirelessly.");
+  } catch (err) {
+    console.warn("BLE connection cancelled or failed:", err);
+  }
+}
+
+function parseHwProtocolLine(line) {
+  if (!line) return;
+  if (line.startsWith('DIST:')) {
+    const d = parseInt(line.split(':')[1], 10);
+    if (!isNaN(d)) {
+      mobileState.currentDistance = d;
+      if (d <= 50) vibrate(80);
+    }
+  } else if (line.startsWith('TRIGGER_AI:')) {
+    const dist = line.split(':')[1];
+    answerUserVisionQuestion(`Obstacle at ${dist} centimeters`);
+  } else if (line === 'EVENT:SOS_BUTTON') {
+    triggerEmergency('Hardware SOS Push Button');
+  } else if (line === 'EVENT:DROP') {
+    vibrate([200, 100, 200]);
+    speak("Caution: Drop-off or stairs down ahead.", true);
+  } else if (line === 'WARN:LOW_BATTERY') {
+    speak("Warning: Glove battery low.");
+  } else if (line === 'FAULT:ECHO_STUCK') {
+    speak("Sensor wiring fault warning: check ultrasonic cable.");
+  }
+}
+
+const btnBleConnect = document.getElementById('btnBleConnect');
+if (btnBleConnect) {
+  btnBleConnect.addEventListener('click', connectBleDevice);
 }
 
 if (btnCloseKey) {
