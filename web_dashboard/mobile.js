@@ -158,7 +158,7 @@ function speak(text, isUrgent = false) {
   mobileState.isSpeaking = true;
 
   if (radarRing) {
-    radarRing.className = 'w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400 bg-amber-400/30 flex items-center justify-center shadow-[0_0_40px_rgba(251,191,36,0.6)] transition-all duration-300';
+    radarRing.className = 'relative w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center transition-all duration-300 scale-105';
   }
 
   return new Promise((resolve) => {
@@ -182,7 +182,7 @@ function speak(text, isUrgent = false) {
         if (token === mobileState.currentSpeechToken) {
           mobileState.isSpeaking = false;
           if (radarRing) {
-            radarRing.className = 'w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400 bg-amber-400/15 flex items-center justify-center status-pulse shadow-[0_0_35px_rgba(251,191,36,0.35)] transition-all duration-300';
+            radarRing.className = 'relative w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center beacon-pulsing transition-all duration-300';
           }
         }
         resolve(ok);

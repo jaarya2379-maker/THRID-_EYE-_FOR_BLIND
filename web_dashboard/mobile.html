@@ -40,14 +40,14 @@
       outline-offset: 2px !important;
     }
 
-    /* Pulsing animations for active looking and talking assistance */
+    /* Subtle scale breathing without colored rings */
     @keyframes beaconPulse {
-      0% { transform: scale(0.96); box-shadow: 0 0 20px rgba(251, 191, 36, 0.25); }
-      50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(251, 191, 36, 0.55); }
-      100% { transform: scale(0.96); box-shadow: 0 0 20px rgba(251, 191, 36, 0.25); }
+      0% { transform: scale(0.98); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(0.98); }
     }
     .beacon-pulsing {
-      animation: beaconPulse 1.8s infinite ease-in-out;
+      animation: beaconPulse 2.4s infinite ease-in-out;
     }
 
     /* High contrast SOS Flashing */
@@ -110,9 +110,9 @@
     <!-- 2. LOWER HALF: Circular Third Eye matching Mockup -->
     <div class="flex flex-col items-center justify-center my-auto shrink-0">
       
-      <!-- Glowing Circular Eye Beacon -->
-      <div id="radarRing" class="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center p-1 beacon-pulsing transition-all duration-300">
-        <img src="assets/mobile_eye.png" alt="Third Eye Icon" class="w-full h-full rounded-full object-cover shadow-[0_0_35px_rgba(251,191,36,0.35)] select-none pointer-events-none">
+      <!-- Clean Circular Eye Beacon without yellow ring -->
+      <div id="radarRing" class="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center beacon-pulsing transition-all duration-300">
+        <img src="assets/mobile_eye.png" alt="Third Eye Icon" class="w-full h-full rounded-full object-cover select-none pointer-events-none">
       </div>
 
       <!-- Minimalist Voice Guidance Transcript (Voice First) -->
