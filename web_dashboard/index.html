@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Third Eye AI</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=15.0">
+</head>
+<body>
+  <div id="screenReaderStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ================= EXACT VIEWPORT FRAME MATCHING MOCKUP ================= -->
+  <div class="mockup-viewport">
+
+    <!-- ================= LEFT COLUMN: Camera Feed & Bottom Voice Capsule ================= -->
+    <div class="flex flex-col justify-between h-full gap-2.5 sm:gap-3.5 md:gap-4 min-w-0 w-full">
+      
+      <!-- Top Left Guideline Accent Line matching mockup 1:1 -->
+      <div class="w-full h-[1.5px] bg-white/75 rounded-full shrink-0"></div>
+
+      <!-- Top Left: Exact Black Rectangle Camera Viewport -->
+      <div class="mockup-camera-box flex-1 min-h-[220px] md:min-h-0 flex items-center justify-center">
+        <video id="webcamVideo" autoplay playsinline muted aria-label="Live camera preview" class="w-full h-full object-cover"></video>
+        <canvas id="snapshotCanvas" class="hidden"></canvas>
+
+        <!-- Top Left: Link to Blind User Mobile Companion App -->
+        <a href="mobile.html" class="absolute top-2.5 left-2.5 z-30 px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-black text-xs font-black flex items-center gap-1.5 shadow-lg transition" title="Open Mobile Camera Interface for the Blind Person">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span>Blind Mobile View</span>
+        </a>
+
+        <!-- Top Right Dark Pill Badge matching mockup rectangle -->
+        <button id="btnToggleCamera" type="button" aria-label="Switch Camera" class="mockup-camera-badge">
+          <span id="hudDistanceValue" class="font-mono font-bold">120 cm</span>
+          <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
+        </button>
+
+        <!-- Bottom Left Status Pill inside black camera box -->
+        <div id="hudStatusTag" class="absolute bottom-3 left-3 z-20 px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 whitespace-nowrap shadow-md">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>Path Clear</span>
+        </div>
+
+        <!-- Missing Key Banner -->
+        <div id="missingKeyBanner" class="absolute inset-x-4 bottom-12 z-20 p-3 rounded-lg bg-black/85 border border-amber-500/60 text-amber-200 text-xs flex items-center justify-between backdrop-blur-md">
+          <div class="flex items-center gap-2">
+            <i data-lucide="key" class="w-4 h-4 text-amber-400 shrink-0"></i>
+            <span>Set free Gemini API Key to activate AI</span>
+          </div>
+          <button id="btnBannerSetKey" type="button" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition shrink-0">
+            Set Key
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Left: Exact Stadium / Capsule Pill matching mockup -->
+      <div id="voiceAssistantBanner" role="button" tabindex="0" aria-label="Voice Assistant. Listening for commands." class="mockup-pill h-[30%] min-h-[105px] max-h-[175px] p-4 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 cursor-pointer select-none shrink-0 w-full">
+        
+        <!-- Left: Mic pulse icon -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div id="voiceStatusBadge" class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-600 text-emerald-800 flex items-center justify-center shadow-md">
+            <i data-lucide="mic" class="w-5 h-5 text-emerald-700 animate-pulse" id="voiceMicIcon"></i>
+          </div>
+          <div class="hidden sm:block">
+            <div class="text-xs font-bold text-slate-900 tracking-wide" id="voiceStatusText">Voice: Listening</div>
+            <div class="text-[10px] text-teal-800 font-mono font-medium" id="audioDiagnosticText">HD Audio Ready</div>
+          </div>
+        </div>
+
+        <!-- Center: Spoken Guidance Transcript -->
+        <div class="flex-1 text-center sm:text-left px-2 overflow-hidden">
+          <p id="speechTranscript" aria-hidden="true" class="text-sm sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2">
+            "Third Eye is listening. Say 'Hey help me out' to start."
+          </p>
+          <div class="flex items-center justify-center sm:justify-start gap-2 mt-1 text-[11px] text-slate-600">
+            <span id="speechTimestamp">Updated: Just now</span>
+            <span>•</span>
+            <span class="font-mono text-slate-800 font-bold">Gemini 3.5 Flash-Lite</span>
+          </div>
+        </div>
+
+        <!-- Right: Audio Action Controls -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button id="btnTestVoice" type="button" aria-label="Test speaker audio" class="px-3 sm:px-3.5 py-2 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-teal-800"></i>
+            <span class="hidden md:inline">Test Voice</span>
+          </button>
+          <button id="btnReplaySpeech" type="button" aria-label="Replay speech" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-800 hover:text-slate-950 flex items-center justify-center transition shadow-sm">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= RIGHT COLUMN: Top 3 Buttons & Bottom Card ================= -->
+    <div class="flex flex-col justify-between h-full gap-3 sm:gap-4 md:gap-5 min-w-0 w-full">
+      
+      <!-- Top Right: Exact 3 Pill Buttons Row matching mockup -->
+      <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 h-[52px] sm:h-[56px] w-full">
+        <!-- Button 1: Wide Pill "Scan Scene" -->
+        <button id="btnSnapshot" type="button" aria-label="Scan scene and identify obstacles" class="mockup-pill flex-1 h-full px-3 sm:px-5 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
+          <i data-lucide="camera" class="w-4 h-4 text-slate-900"></i>
+          <span>Scan Scene</span>
+        </button>
+
+        <!-- Button 2: Wide Pill "Voice Assist" -->
+        <button id="btnVoiceQuery" type="button" aria-label="Start voice assistant" class="mockup-pill flex-1 h-full px-3 sm:px-5 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
+          <i data-lucide="mic" class="w-4 h-4 text-slate-900" id="askMicIcon"></i>
+          <span>Voice Assist</span>
+        </button>
+
+        <!-- Button 3: Circle Button "Key / Settings" -->
+        <button id="btnOpenKeyModal" type="button" aria-label="Settings and Gemini API Key" class="mockup-pill w-[52px] sm:w-[56px] h-full shrink-0 flex items-center justify-center text-slate-900">
+          <i data-lucide="key" class="w-4 h-4 text-slate-900"></i>
+          <span id="keyStatusBadge" class="sr-only">Key</span>
+        </button>
+      </div>
+
+      <!-- Bottom Right: Exact Large Rounded Card matching mockup -->
+      <div class="mockup-card flex-1 min-h-[340px] md:min-h-0 p-4 sm:p-6 overflow-hidden">
+        
+        <!-- Header: Telemetry, AI Health, Battery, Serial & SOS -->
+        <div class="flex items-center justify-between border-b border-slate-900/15 pb-2.5 flex-wrap gap-1.5">
+          <div class="flex items-center gap-2">
+            <i data-lucide="radio" class="w-4 h-4 text-slate-800"></i>
+            <span class="text-xs font-bold text-slate-900 tracking-wider uppercase">Proximity Radar</span>
+            <div id="aiStatusBadge" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/70 border border-slate-900/15 text-[10px] font-bold text-slate-800" title="AI Connection Status">
+              <span id="aiStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="aiStatusText">AI: Ready</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div id="batteryBadge" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 border border-slate-900/15 text-[10px] font-mono font-bold text-slate-800" title="ESP32 Glove Battery Level">
+              <i data-lucide="battery-charging" class="w-3 h-3 text-emerald-700"></i>
+              <span id="batteryStatusText">100%</span>
+            </div>
+            <button id="btnConnectSerial" type="button" aria-label="Connect ESP32 sensor via USB" class="text-xs px-2.5 py-1 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-800 flex items-center gap-1.5 transition shadow-sm">
+              <i data-lucide="usb" class="w-3.5 h-3.5 text-slate-800" id="serialIcon"></i>
+              <span id="serialStatusText">ESP32</span>
+            </button>
+            <button id="btnTriggerSos" type="button" aria-label="Trigger SOS emergency alert to caregiver" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-600/15 hover:bg-rose-600 hover:text-white text-rose-900 border border-rose-600/30 text-xs font-bold transition shadow-xs cursor-pointer">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+              <span id="sosStatusText">SOS</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sensor Fault Alert Banner (Hidden by default) -->
+        <div id="sensorFaultBanner" class="hidden my-1.5 p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-900 text-xs flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+            <span id="sensorFaultText">Sensor fault detected: Check ultrasonic cable</span>
+          </div>
+          <button id="btnDismissFault" type="button" class="text-[10px] underline font-bold">Dismiss</button>
+        </div>
+
+        <!-- Radar Arc Gauge & Live Distance -->
+        <div class="flex items-center justify-around gap-4 py-2">
+          <div class="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
+            <canvas id="radarCanvas" width="130" height="130" class="w-full h-full"></canvas>
+            <div class="absolute flex flex-col items-center">
+              <span id="radarDistanceText" class="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 tracking-tight">120</span>
+              <span class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">cm</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shadow-[0_0_8px_rgba(5,150,105,0.5)]"></span>
+              <span class="text-slate-800 font-semibold">&gt; 100 cm: Clear Path</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+              <span class="text-slate-800 font-semibold">50 - 100 cm: Caution</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.5)]"></span>
+              <span class="text-slate-800 font-semibold">&lt; 25 cm: Danger Stop</span>
+            </div>
+            <div class="mt-1 pt-1.5 border-t border-slate-900/10 text-[11px] text-slate-700 flex items-center justify-between">
+              <span id="hapticBadge" class="font-mono">Haptic: IDLE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assistance Modes -->
+        <div>
+          <div class="text-[11px] font-bold text-slate-800 mb-1.5 uppercase tracking-wider">Assistance Mode</div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-mode="hazard" aria-pressed="true" class="mode-btn active py-2 px-1 text-center text-xs">
+              Hazards
+            </button>
+            <button type="button" data-mode="ocr" aria-pressed="false" class="mode-btn py-2 px-1 text-center text-xs">
+              Read Text
+            </button>
+            <button type="button" data-mode="currency" aria-pressed="false" class="mode-btn py-2 px-1 text-center text-xs">
+              Currency
+            </button>
+            <button type="button" data-mode="scene" aria-pressed="false" class="mode-btn py-2 px-1 text-center text-xs">
+              Scene
+            </button>
+          </div>
+        </div>
+
+        <!-- Hardware Distance Simulator -->
+        <div class="pt-2 border-t border-slate-900/15">
+          <div class="flex items-center justify-between text-xs text-slate-800 mb-1">
+            <span class="flex items-center gap-1.5 font-semibold">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-slate-800"></i>
+              <span>Simulator</span>
+            </span>
+            <span id="simValue" class="text-slate-900 font-mono font-bold">120 cm</span>
+          </div>
+          <input type="range" id="simSlider" min="10" max="150" value="120" class="w-full cursor-pointer h-2 rounded-lg">
+        </div>
+
+        <!-- Scan & Safety Event Timeline -->
+        <div class="pt-2 border-t border-slate-900/15 flex flex-col">
+          <div class="flex items-center justify-between pb-1">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+              <i data-lucide="history" class="w-3.5 h-3.5 text-slate-800"></i>
+              <span>Safety & Scan Timeline</span>
+              <span id="historyCountBadge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-white/60 border border-slate-900/15 text-slate-800 font-mono">0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnExportHistory" type="button" class="text-[11px] text-teal-900 hover:text-teal-950 font-bold transition">Export Log</button>
+              <span class="text-slate-400">•</span>
+              <button id="btnClearHistory" type="button" class="text-[11px] text-slate-600 hover:text-slate-900 transition font-medium">Clear</button>
+            </div>
+          </div>
+          <div id="historyList" class="max-h-24 overflow-y-auto space-y-1 text-xs pr-1">
+            <div class="text-center py-1 text-slate-600 text-xs font-mono">
+              Tap "Scan Scene" or speak to begin.
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-1.5 text-[10px] text-slate-700 border-t border-slate-900/10 mt-1">
+            <button id="btnOpenPrivacyModal" type="button" class="underline hover:text-slate-950 flex items-center gap-1 font-medium">
+              <i data-lucide="shield-check" class="w-3 h-3 text-emerald-800"></i>
+              <span>Privacy & Informed Consent</span>
+            </button>
+            <span class="font-mono text-[9px] text-slate-600">Audit Trail: Active</span>
+          </div>
+        </div>
+
+        <!-- Hidden canvas for Chart.js -->
+        <div class="hidden"><canvas id="historyChart"></canvas></div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= API KEY MODAL ================= -->
+  <div id="keyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
+    <div class="mockup-card max-w-sm w-full p-6 shadow-2xl border border-slate-900/20 bg-[#91c2f2]">
+      <h3 id="keyModalTitle" class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+        <i data-lucide="key" class="w-4 h-4 text-slate-900"></i> Gemini API Key
+      </h3>
+      <p class="text-xs text-slate-700 mb-4 leading-relaxed font-medium">
+        Enter your Google AI Studio API key. Runs Gemini 2.5 Flash for instant mobility guidance. Saved safely in your local browser storage.
+      </p>
+      
+      <input type="password" id="inputApiKey" aria-label="Gemini API key" placeholder="AIzaSy..." class="w-full px-3 py-2 bg-white/80 border border-slate-900/25 rounded-xl text-xs font-mono text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-slate-900 mb-4">
+
+      <div class="flex items-center justify-end gap-2">
+        <button id="btnCloseKeyModal" type="button" class="px-3.5 py-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-xs font-semibold text-slate-800 transition">Cancel</button>
+        <button id="btnSaveApiKey" type="button" class="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-bold transition shadow-sm">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CAREGIVER SOS EMERGENCY MODAL ================= -->
+  <div id="caregiverModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="caregiverModalTitle">
+    <div class="mockup-card max-w-md w-full p-6 shadow-2xl border-2 border-rose-500 bg-[#ffdddd] text-slate-900">
+      <div class="flex items-center gap-2 mb-3 text-rose-700">
+        <i data-lucide="bell-ring" class="w-6 h-6 animate-bounce"></i>
+        <h3 id="caregiverModalTitle" class="text-base font-extrabold uppercase tracking-wide">
+          Emergency SOS Activated
+        </h3>
+      </div>
+      
+      <p class="text-xs text-slate-800 mb-3 leading-relaxed font-medium">
+        An emergency alert has been broadcast to designated caregivers. The local device is vibrating and sounding an alert beacon.
+      </p>
+
+      <div class="p-3 bg-white/80 border border-rose-300 rounded-xl mb-4 space-y-1.5 text-xs font-mono">
+        <div class="flex justify-between">
+          <span class="text-slate-600">Dispatch Status:</span>
+          <span id="caregiverDispatchStatus" class="font-bold text-rose-700">DELIVERED TO CAREGIVER</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">Trigger Source:</span>
+          <span id="caregiverTriggerReason" class="font-semibold text-slate-900">User SOS Command</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">Obstacle Proximity:</span>
+          <span id="caregiverDistanceSnapshot" class="font-semibold text-slate-900">-- cm</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-600">Event Time:</span>
+          <span id="caregiverTimestamp" class="font-semibold text-slate-900">--:--:--</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-2">
+        <button id="btnCancelSos" type="button" class="w-full sm:w-auto px-4 py-2 rounded-full bg-white/70 hover:bg-white text-slate-800 border border-slate-400 text-xs font-semibold transition">
+          Cancel False Alarm
+        </button>
+        <button id="btnAcknowledgeSos" type="button" class="w-full sm:w-auto px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Acknowledge Alert (Caregiver)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PRIVACY & INFORMED CONSENT MODAL ================= -->
+  <div id="privacyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
+    <div class="mockup-card max-w-md w-full p-6 shadow-2xl border border-slate-900/20 bg-[#91c2f2]">
+      <h3 id="privacyModalTitle" class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-800"></i>
+        <span>Privacy & Informed Consent Notice</span>
+      </h3>
+      <div class="text-xs text-slate-800 space-y-2 mb-4 leading-relaxed font-medium">
+        <p><strong>1. Ephemeral Image Processing:</strong> Camera frames are captured only when you trigger a scan or proximity event. Full-resolution frames are transmitted over encrypted TLS directly to Google Gemini and are wiped from browser memory immediately after inference.</p>
+        <p><strong>2. Local Data Storage:</strong> Your Gemini API key and scan history are stored strictly within your browser's private <code class="bg-white/60 px-1 py-0.5 rounded font-mono">localStorage</code>. No personal data is sent to Third Eye creators.</p>
+        <p><strong>3. Emergency Dispatches:</strong> SOS emergency alerts are routed to your local dashboard and configured caregiver endpoints. Obstacle proximity warnings remain local to prevent false caregiver alarms.</p>
+        <p><strong>4. Mobility Disclaimer:</strong> Third Eye is an experimental assistive aid. It does NOT replace a white cane or guide dog. Never navigate independently in dangerous areas solely relying on electronic sensors.</p>
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button id="btnClosePrivacyModal" type="button" class="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-bold transition shadow-sm">
+          I Understand & Agree
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=15.0"></script>
+  <script>
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>
