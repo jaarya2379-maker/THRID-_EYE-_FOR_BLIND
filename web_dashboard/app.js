@@ -1610,7 +1610,7 @@ function drawRadar() {
   // Background track
   radarCtx.beginPath();
   radarCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-  radarCtx.strokeStyle = 'rgba(15, 23, 42, 0.14)';
+  radarCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
   radarCtx.lineWidth = 6.5;
   radarCtx.stroke();
 

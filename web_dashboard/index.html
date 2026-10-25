@@ -12,9 +12,9 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <link rel="stylesheet" href="style.css?v=15.0">
+  <link rel="stylesheet" href="style.css?v=16.0">
 </head>
-<body>
+<body class="bg-black text-slate-100 antialiased select-none">
   <div id="screenReaderStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ================= EXACT VIEWPORT FRAME MATCHING MOCKUP ================= -->
@@ -24,7 +24,7 @@
     <div class="flex flex-col justify-between h-full gap-2.5 sm:gap-3.5 md:gap-4 min-w-0 w-full">
       
       <!-- Top Left Guideline Accent Line matching mockup 1:1 -->
-      <div class="w-full h-[1.5px] bg-white/75 rounded-full shrink-0"></div>
+      <div class="w-full h-[1.5px] bg-white/40 rounded-full shrink-0"></div>
 
       <!-- Top Left: Exact Black Rectangle Camera Viewport -->
       <div class="mockup-camera-box flex-1 min-h-[220px] md:min-h-0 flex items-center justify-center">
@@ -50,12 +50,12 @@
         </div>
 
         <!-- Missing Key Banner -->
-        <div id="missingKeyBanner" class="absolute inset-x-4 bottom-12 z-20 p-3 rounded-lg bg-black/85 border border-amber-500/60 text-amber-200 text-xs flex items-center justify-between backdrop-blur-md">
+        <div id="missingKeyBanner" class="absolute inset-x-4 bottom-12 z-20 p-3 rounded-xl bg-black/90 border border-amber-500/60 text-amber-200 text-xs flex items-center justify-between backdrop-blur-md shadow-2xl">
           <div class="flex items-center gap-2">
             <i data-lucide="key" class="w-4 h-4 text-amber-400 shrink-0"></i>
             <span>Set free Gemini API Key to activate AI</span>
           </div>
-          <button id="btnBannerSetKey" type="button" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition shrink-0">
+          <button id="btnBannerSetKey" type="button" class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-black font-black text-xs transition shrink-0 uppercase tracking-wide">
             Set Key
           </button>
         </div>
@@ -66,34 +66,34 @@
         
         <!-- Left: Mic pulse icon -->
         <div class="flex items-center gap-3 shrink-0">
-          <div id="voiceStatusBadge" class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-600 text-emerald-800 flex items-center justify-center shadow-md">
-            <i data-lucide="mic" class="w-5 h-5 text-emerald-700 animate-pulse" id="voiceMicIcon"></i>
+          <div id="voiceStatusBadge" class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center shadow-lg">
+            <i data-lucide="mic" class="w-5 h-5 text-emerald-300 animate-pulse" id="voiceMicIcon"></i>
           </div>
           <div class="hidden sm:block">
-            <div class="text-xs font-bold text-slate-900 tracking-wide" id="voiceStatusText">Voice: Listening</div>
-            <div class="text-[10px] text-teal-800 font-mono font-medium" id="audioDiagnosticText">HD Audio Ready</div>
+            <div class="text-xs font-black text-white tracking-wide uppercase" id="voiceStatusText">Voice: Listening</div>
+            <div class="text-[10px] text-emerald-400 font-mono font-bold" id="audioDiagnosticText">HD Audio Ready</div>
           </div>
         </div>
 
         <!-- Center: Spoken Guidance Transcript -->
         <div class="flex-1 text-center sm:text-left px-2 overflow-hidden">
-          <p id="speechTranscript" aria-hidden="true" class="text-sm sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2">
+          <p id="speechTranscript" aria-hidden="true" class="text-sm sm:text-base font-bold text-white leading-snug line-clamp-2">
             "Third Eye is listening. Say 'Hey help me out' to start."
           </p>
-          <div class="flex items-center justify-center sm:justify-start gap-2 mt-1 text-[11px] text-slate-600">
+          <div class="flex items-center justify-center sm:justify-start gap-2 mt-1 text-[11px] text-zinc-400 font-mono">
             <span id="speechTimestamp">Updated: Just now</span>
             <span>•</span>
-            <span class="font-mono text-slate-800 font-bold">Gemini 3.5 Flash-Lite</span>
+            <span class="text-amber-400 font-bold">Gemini 2.5 Flash</span>
           </div>
         </div>
 
         <!-- Right: Audio Action Controls -->
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <button id="btnTestVoice" type="button" aria-label="Test speaker audio" class="px-3 sm:px-3.5 py-2 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
-            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-teal-800"></i>
+          <button id="btnTestVoice" type="button" aria-label="Test speaker audio" class="px-3 sm:px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm">
+            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-amber-300"></i>
             <span class="hidden md:inline">Test Voice</span>
           </button>
-          <button id="btnReplaySpeech" type="button" aria-label="Replay speech" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-800 hover:text-slate-950 flex items-center justify-center transition shadow-sm">
+          <button id="btnReplaySpeech" type="button" aria-label="Replay speech" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-zinc-200 hover:text-white flex items-center justify-center transition shadow-sm">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
         </div>
@@ -108,20 +108,20 @@
       <!-- Top Right: Exact 3 Pill Buttons Row matching mockup -->
       <div class="flex items-center gap-2.5 sm:gap-3 shrink-0 h-[52px] sm:h-[56px] w-full">
         <!-- Button 1: Wide Pill "Scan Scene" -->
-        <button id="btnSnapshot" type="button" aria-label="Scan scene and identify obstacles" class="mockup-pill flex-1 h-full px-3 sm:px-5 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
-          <i data-lucide="camera" class="w-4 h-4 text-slate-900"></i>
+        <button id="btnSnapshot" type="button" aria-label="Scan scene and identify obstacles" class="mockup-pill flex-1 h-full px-3 sm:px-5 font-black text-xs sm:text-sm flex items-center justify-center gap-2 tracking-wide uppercase">
+          <i data-lucide="camera" class="w-4 h-4 text-amber-300"></i>
           <span>Scan Scene</span>
         </button>
 
         <!-- Button 2: Wide Pill "Voice Assist" -->
-        <button id="btnVoiceQuery" type="button" aria-label="Start voice assistant" class="mockup-pill flex-1 h-full px-3 sm:px-5 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
-          <i data-lucide="mic" class="w-4 h-4 text-slate-900" id="askMicIcon"></i>
+        <button id="btnVoiceQuery" type="button" aria-label="Start voice assistant" class="mockup-pill flex-1 h-full px-3 sm:px-5 font-black text-xs sm:text-sm flex items-center justify-center gap-2 tracking-wide uppercase">
+          <i data-lucide="mic" class="w-4 h-4 text-sky-300" id="askMicIcon"></i>
           <span>Voice Assist</span>
         </button>
 
         <!-- Button 3: Circle Button "Key / Settings" -->
-        <button id="btnOpenKeyModal" type="button" aria-label="Settings and Gemini API Key" class="mockup-pill w-[52px] sm:w-[56px] h-full shrink-0 flex items-center justify-center text-slate-900">
-          <i data-lucide="key" class="w-4 h-4 text-slate-900"></i>
+        <button id="btnOpenKeyModal" type="button" aria-label="Settings and Gemini API Key" class="mockup-pill w-[52px] sm:w-[56px] h-full shrink-0 flex items-center justify-center text-zinc-200 hover:text-amber-400">
+          <i data-lucide="key" class="w-5 h-5"></i>
           <span id="keyStatusBadge" class="sr-only">Key</span>
         </button>
       </div>
@@ -130,38 +130,38 @@
       <div class="mockup-card flex-1 min-h-[340px] md:min-h-0 p-4 sm:p-6 overflow-hidden">
         
         <!-- Header: Telemetry, AI Health, Battery, Serial & SOS -->
-        <div class="flex items-center justify-between border-b border-slate-900/15 pb-2.5 flex-wrap gap-1.5">
+        <div class="flex items-center justify-between border-b border-white/15 pb-2.5 flex-wrap gap-1.5">
           <div class="flex items-center gap-2">
-            <i data-lucide="radio" class="w-4 h-4 text-slate-800"></i>
-            <span class="text-xs font-bold text-slate-900 tracking-wider uppercase">Proximity Radar</span>
-            <div id="aiStatusBadge" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/70 border border-slate-900/15 text-[10px] font-bold text-slate-800" title="AI Connection Status">
-              <span id="aiStatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i>
+            <span class="text-xs font-black text-white tracking-wider uppercase">Proximity Radar</span>
+            <div id="aiStatusBadge" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-zinc-900/90 border border-white/20 text-[10px] font-mono font-bold text-zinc-200" title="AI Connection Status">
+              <span id="aiStatusDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
               <span id="aiStatusText">AI: Ready</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
-            <div id="batteryBadge" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/60 border border-slate-900/15 text-[10px] font-mono font-bold text-slate-800" title="ESP32 Glove Battery Level">
-              <i data-lucide="battery-charging" class="w-3 h-3 text-emerald-700"></i>
+            <div id="batteryBadge" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-900/90 border border-white/20 text-[10px] font-mono font-bold text-emerald-400" title="ESP32 Battery Level">
+              <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
               <span id="batteryStatusText">100%</span>
             </div>
-            <button id="btnConnectSerial" type="button" aria-label="Connect ESP32 sensor via USB" class="text-xs px-2.5 py-1 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-slate-800 flex items-center gap-1.5 transition shadow-sm">
-              <i data-lucide="usb" class="w-3.5 h-3.5 text-slate-800" id="serialIcon"></i>
+            <button id="btnConnectSerial" type="button" aria-label="Connect ESP32 sensor via USB" class="text-xs px-2.5 py-1 rounded-full bg-zinc-900/90 hover:bg-zinc-800 border border-white/25 text-zinc-200 hover:text-white flex items-center gap-1.5 transition shadow-sm font-semibold">
+              <i data-lucide="usb" class="w-3.5 h-3.5 text-amber-400" id="serialIcon"></i>
               <span id="serialStatusText">ESP32</span>
             </button>
-            <button id="btnTriggerSos" type="button" aria-label="Trigger SOS emergency alert to caregiver" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-600/15 hover:bg-rose-600 hover:text-white text-rose-900 border border-rose-600/30 text-xs font-bold transition shadow-xs cursor-pointer">
-              <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+            <button id="btnTriggerSos" type="button" aria-label="Trigger SOS emergency alert to caregiver" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/30 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/50 text-xs font-black uppercase transition shadow-md cursor-pointer">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
               <span id="sosStatusText">SOS</span>
             </button>
           </div>
         </div>
 
         <!-- Sensor Fault Alert Banner (Hidden by default) -->
-        <div id="sensorFaultBanner" class="hidden my-1.5 p-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-900 text-xs flex items-center justify-between">
+        <div id="sensorFaultBanner" class="hidden my-1.5 p-2 rounded-xl bg-rose-950/80 border border-rose-500/60 text-rose-200 text-xs flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 shrink-0"></i>
             <span id="sensorFaultText">Sensor fault detected: Check ultrasonic cable</span>
           </div>
-          <button id="btnDismissFault" type="button" class="text-[10px] underline font-bold">Dismiss</button>
+          <button id="btnDismissFault" type="button" class="text-[10px] underline font-bold text-white">Dismiss</button>
         </div>
 
         <!-- Radar Arc Gauge & Live Distance -->
@@ -169,33 +169,33 @@
           <div class="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
             <canvas id="radarCanvas" width="130" height="130" class="w-full h-full"></canvas>
             <div class="absolute flex flex-col items-center">
-              <span id="radarDistanceText" class="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 tracking-tight">120</span>
-              <span class="text-[9px] text-slate-600 uppercase tracking-widest font-bold">cm</span>
+              <span id="radarDistanceText" class="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight">120</span>
+              <span class="text-[10px] text-zinc-400 uppercase tracking-widest font-black">cm</span>
             </div>
           </div>
 
           <div class="flex flex-col gap-1.5 text-xs">
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shadow-[0_0_8px_rgba(5,150,105,0.5)]"></span>
-              <span class="text-slate-800 font-semibold">&gt; 100 cm: Clear Path</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]"></span>
+              <span class="text-zinc-200 font-bold">&gt; 100 cm: Clear Path</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
-              <span class="text-slate-800 font-semibold">50 - 100 cm: Caution</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.7)]"></span>
+              <span class="text-zinc-200 font-bold">50 - 100 cm: Caution</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.5)]"></span>
-              <span class="text-slate-800 font-semibold">&lt; 25 cm: Danger Stop</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"></span>
+              <span class="text-zinc-200 font-bold">&lt; 25 cm: Danger Stop</span>
             </div>
-            <div class="mt-1 pt-1.5 border-t border-slate-900/10 text-[11px] text-slate-700 flex items-center justify-between">
-              <span id="hapticBadge" class="font-mono">Haptic: IDLE</span>
+            <div class="mt-1 pt-1.5 border-t border-white/10 text-[11px] text-zinc-400 flex items-center justify-between font-mono">
+              <span id="hapticBadge">Haptic: IDLE</span>
             </div>
           </div>
         </div>
 
         <!-- Assistance Modes -->
         <div>
-          <div class="text-[11px] font-bold text-slate-800 mb-1.5 uppercase tracking-wider">Assistance Mode</div>
+          <div class="text-[11px] font-black text-zinc-400 mb-1.5 uppercase tracking-wider">Assistance Mode</div>
           <div class="grid grid-cols-4 gap-1.5">
             <button type="button" data-mode="hazard" aria-pressed="true" class="mode-btn active py-2 px-1 text-center text-xs">
               Hazards
@@ -213,42 +213,42 @@
         </div>
 
         <!-- Hardware Distance Simulator -->
-        <div class="pt-2 border-t border-slate-900/15">
-          <div class="flex items-center justify-between text-xs text-slate-800 mb-1">
-            <span class="flex items-center gap-1.5 font-semibold">
-              <i data-lucide="sliders" class="w-3.5 h-3.5 text-slate-800"></i>
+        <div class="pt-2 border-t border-white/15">
+          <div class="flex items-center justify-between text-xs text-zinc-300 mb-1">
+            <span class="flex items-center gap-1.5 font-bold">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-400"></i>
               <span>Simulator</span>
             </span>
-            <span id="simValue" class="text-slate-900 font-mono font-bold">120 cm</span>
+            <span id="simValue" class="text-amber-400 font-mono font-black">120 cm</span>
           </div>
           <input type="range" id="simSlider" min="10" max="150" value="120" class="w-full cursor-pointer h-2 rounded-lg">
         </div>
 
         <!-- Scan & Safety Event Timeline -->
-        <div class="pt-2 border-t border-slate-900/15 flex flex-col">
+        <div class="pt-2 border-t border-white/15 flex flex-col">
           <div class="flex items-center justify-between pb-1">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-              <i data-lucide="history" class="w-3.5 h-3.5 text-slate-800"></i>
-              <span>Safety & Scan Timeline</span>
-              <span id="historyCountBadge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-white/60 border border-slate-900/15 text-slate-800 font-mono">0</span>
+            <div class="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-wider">
+              <i data-lucide="history" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Safety Timeline</span>
+              <span id="historyCountBadge" class="text-[10px] px-2 py-0.2 rounded-full bg-zinc-900 border border-white/20 text-zinc-300 font-mono">0</span>
             </div>
             <div class="flex items-center gap-2">
-              <button id="btnExportHistory" type="button" class="text-[11px] text-teal-900 hover:text-teal-950 font-bold transition">Export Log</button>
-              <span class="text-slate-400">•</span>
-              <button id="btnClearHistory" type="button" class="text-[11px] text-slate-600 hover:text-slate-900 transition font-medium">Clear</button>
+              <button id="btnExportHistory" type="button" class="text-[11px] text-amber-400 hover:text-amber-300 font-bold transition">Export</button>
+              <span class="text-zinc-600">•</span>
+              <button id="btnClearHistory" type="button" class="text-[11px] text-zinc-400 hover:text-white transition font-medium">Clear</button>
             </div>
           </div>
           <div id="historyList" class="max-h-24 overflow-y-auto space-y-1 text-xs pr-1">
-            <div class="text-center py-1 text-slate-600 text-xs font-mono">
+            <div class="text-center py-1 text-zinc-500 text-xs font-mono">
               Tap "Scan Scene" or speak to begin.
             </div>
           </div>
-          <div class="flex items-center justify-between pt-1.5 text-[10px] text-slate-700 border-t border-slate-900/10 mt-1">
-            <button id="btnOpenPrivacyModal" type="button" class="underline hover:text-slate-950 flex items-center gap-1 font-medium">
-              <i data-lucide="shield-check" class="w-3 h-3 text-emerald-800"></i>
+          <div class="flex items-center justify-between pt-1.5 text-[10px] text-zinc-400 border-t border-white/10 mt-1">
+            <button id="btnOpenPrivacyModal" type="button" class="underline hover:text-zinc-200 flex items-center gap-1 font-medium">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
               <span>Privacy & Informed Consent</span>
             </button>
-            <span class="font-mono text-[9px] text-slate-600">Audit Trail: Active</span>
+            <span class="font-mono text-[9px] text-zinc-500">Audit Trail: Active</span>
           </div>
         </div>
 
@@ -262,93 +262,113 @@
   </div>
 
   <!-- ================= API KEY MODAL ================= -->
-  <div id="keyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
-    <div class="mockup-card max-w-sm w-full p-6 shadow-2xl border border-slate-900/20 bg-[#91c2f2]">
-      <h3 id="keyModalTitle" class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-        <i data-lucide="key" class="w-4 h-4 text-slate-900"></i> Gemini API Key
+  <div id="keyModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle">
+    <div class="mockup-card max-w-sm w-full p-6 shadow-2xl border-2 border-amber-400/80 bg-zinc-950/95 text-white">
+      <h3 id="keyModalTitle" class="text-base font-black text-amber-400 mb-2 flex items-center gap-2">
+        <i data-lucide="key" class="w-5 h-5 text-amber-400"></i> Gemini API Key
       </h3>
-      <p class="text-xs text-slate-700 mb-4 leading-relaxed font-medium">
-        Enter your Google AI Studio API key. Runs Gemini 2.5 Flash for instant mobility guidance. Saved safely in your local browser storage.
+      <p class="text-xs text-zinc-300 mb-4 leading-relaxed font-medium">
+        Enter your Google AI Studio API key to run Gemini 2.5 Flash for instant mobility guidance. Saved privately in your local browser storage.
       </p>
       
-      <input type="password" id="inputApiKey" aria-label="Gemini API key" placeholder="AIzaSy..." class="w-full px-3 py-2 bg-white/80 border border-slate-900/25 rounded-xl text-xs font-mono text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-slate-900 mb-4">
+      <input type="password" id="inputApiKey" aria-label="Gemini API key" placeholder="AIzaSy..." class="w-full px-3 py-2.5 bg-black border-2 border-white/20 rounded-xl text-xs font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-400 mb-4">
 
       <div class="flex items-center justify-end gap-2">
-        <button id="btnCloseKeyModal" type="button" class="px-3.5 py-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-slate-900/15 text-xs font-semibold text-slate-800 transition">Cancel</button>
-        <button id="btnSaveApiKey" type="button" class="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-bold transition shadow-sm">Save Key</button>
+        <button id="btnCloseKeyModal" type="button" class="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-bold text-zinc-300 transition">Cancel</button>
+        <button id="btnSaveApiKey" type="button" class="px-5 py-2 rounded-xl bg-amber-400 text-black text-xs font-black uppercase transition shadow-md">Save Key</button>
       </div>
     </div>
   </div>
 
   <!-- ================= CAREGIVER SOS EMERGENCY MODAL ================= -->
-  <div id="caregiverModal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="caregiverModalTitle">
-    <div class="mockup-card max-w-md w-full p-6 shadow-2xl border-2 border-rose-500 bg-[#ffdddd] text-slate-900">
-      <div class="flex items-center gap-2 mb-3 text-rose-700">
+  <div id="caregiverModal" class="fixed inset-0 bg-rose-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="caregiverModalTitle">
+    <div class="mockup-card max-w-md w-full p-6 shadow-2xl border-2 border-rose-500 bg-black/95 text-white">
+      <div class="flex items-center gap-2 mb-3 text-rose-500">
         <i data-lucide="bell-ring" class="w-6 h-6 animate-bounce"></i>
-        <h3 id="caregiverModalTitle" class="text-base font-extrabold uppercase tracking-wide">
+        <h3 id="caregiverModalTitle" class="text-base font-black uppercase tracking-wider text-rose-400">
           Emergency SOS Activated
         </h3>
       </div>
       
-      <p class="text-xs text-slate-800 mb-3 leading-relaxed font-medium">
-        An emergency alert has been broadcast to designated caregivers. The local device is vibrating and sounding an alert beacon.
+      <p class="text-xs text-zinc-200 mb-3 leading-relaxed font-medium">
+        An emergency alert has been broadcast to designated caregivers. The user's device is vibrating and sounding an audible beacon.
       </p>
 
-      <div class="p-3 bg-white/80 border border-rose-300 rounded-xl mb-4 space-y-1.5 text-xs font-mono">
+      <div class="p-3 bg-zinc-900 border border-rose-500/40 rounded-xl mb-4 space-y-1.5 text-xs font-mono">
         <div class="flex justify-between">
-          <span class="text-slate-600">Dispatch Status:</span>
-          <span id="caregiverDispatchStatus" class="font-bold text-rose-700">DELIVERED TO CAREGIVER</span>
+          <span class="text-zinc-400">Dispatch Status:</span>
+          <span id="caregiverDispatchStatus" class="font-black text-rose-400">DELIVERED TO CAREGIVER</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-600">Trigger Source:</span>
-          <span id="caregiverTriggerReason" class="font-semibold text-slate-900">User SOS Command</span>
+          <span class="text-zinc-400">Trigger Reason:</span>
+          <span id="caregiverTriggerReason" class="text-zinc-200">User SOS Button</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-600">Obstacle Proximity:</span>
-          <span id="caregiverDistanceSnapshot" class="font-semibold text-slate-900">-- cm</span>
+          <span class="text-zinc-400">Distance Snapshot:</span>
+          <span id="caregiverDistanceSnapshot" class="text-zinc-200 font-bold">120 cm</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-600">Event Time:</span>
-          <span id="caregiverTimestamp" class="font-semibold text-slate-900">--:--:--</span>
+          <span class="text-zinc-400">Timestamp:</span>
+          <span id="caregiverTimestamp" class="text-zinc-200">--:--:--</span>
         </div>
       </div>
 
-      <div class="flex flex-col sm:flex-row items-center justify-end gap-2">
-        <button id="btnCancelSos" type="button" class="w-full sm:w-auto px-4 py-2 rounded-full bg-white/70 hover:bg-white text-slate-800 border border-slate-400 text-xs font-semibold transition">
-          Cancel False Alarm
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-2.5">
+        <button id="btnCancelSos" type="button" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-bold text-zinc-300 transition">
+          Dismiss False Alarm
         </button>
-        <button id="btnAcknowledgeSos" type="button" class="w-full sm:w-auto px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>Acknowledge Alert (Caregiver)</span>
+        <button id="btnAcknowledgeSos" type="button" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-black uppercase transition shadow-lg">
+          ✓ Acknowledge Alert
         </button>
       </div>
     </div>
   </div>
 
   <!-- ================= PRIVACY & INFORMED CONSENT MODAL ================= -->
-  <div id="privacyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
-    <div class="mockup-card max-w-md w-full p-6 shadow-2xl border border-slate-900/20 bg-[#91c2f2]">
-      <h3 id="privacyModalTitle" class="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-800"></i>
-        <span>Privacy & Informed Consent Notice</span>
-      </h3>
-      <div class="text-xs text-slate-800 space-y-2 mb-4 leading-relaxed font-medium">
-        <p><strong>1. Ephemeral Image Processing:</strong> Camera frames are captured only when you trigger a scan or proximity event. Full-resolution frames are transmitted over encrypted TLS directly to Google Gemini and are wiped from browser memory immediately after inference.</p>
-        <p><strong>2. Local Data Storage:</strong> Your Gemini API key and scan history are stored strictly within your browser's private <code class="bg-white/60 px-1 py-0.5 rounded font-mono">localStorage</code>. No personal data is sent to Third Eye creators.</p>
-        <p><strong>3. Emergency Dispatches:</strong> SOS emergency alerts are routed to your local dashboard and configured caregiver endpoints. Obstacle proximity warnings remain local to prevent false caregiver alarms.</p>
-        <p><strong>4. Mobility Disclaimer:</strong> Third Eye is an experimental assistive aid. It does NOT replace a white cane or guide dog. Never navigate independently in dangerous areas solely relying on electronic sensors.</p>
+  <div id="privacyModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
+    <div class="mockup-card max-w-lg w-full p-6 shadow-2xl border-2 border-white/20 bg-zinc-950 text-white max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-white/15">
+        <h3 id="privacyModalTitle" class="text-base font-black text-white flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+          <span>Privacy & Data Protection Notice</span>
+        </h3>
+        <button id="btnClosePrivacyModal" type="button" class="text-zinc-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <div class="flex items-center justify-end gap-2">
-        <button id="btnClosePrivacyModal" type="button" class="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-black text-white text-xs font-bold transition shadow-sm">
+
+      <div class="py-4 space-y-3 text-xs text-zinc-300 leading-relaxed">
+        <p><strong class="text-white">1. Ephemeral Image Handling:</strong> Camera frames captured for obstacle and hazard detection are processed in memory and transmitted directly to the Google Gemini API over encrypted TLS/HTTPS. No images are permanently stored on remote servers.</p>
+        <p><strong class="text-white">2. In-Browser API Key Storage:</strong> Your Gemini API key is stored exclusively in your local browser's <code class="text-amber-400 font-mono">localStorage</code>. It is never logged or routed to third-party proxies.</p>
+        <p><strong class="text-white">3. Local Audit History:</strong> Proximity measurements and hazard timestamps are kept locally on this device and can be cleared at any time via the "Clear" button.</p>
+        <p><strong class="text-white">4. Medical & Navigation Disclaimer:</strong> Third Eye AI is an experimental secondary mobility aid. It is not certified as an autonomous navigation system. Users should always rely on their white cane and trained mobility protocols.</p>
+      </div>
+
+      <div class="pt-3 border-t border-white/15 flex justify-end">
+        <button id="btnAcceptPrivacy" type="button" class="px-5 py-2 rounded-xl bg-amber-400 text-black text-xs font-black uppercase">
           I Understand & Agree
         </button>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=15.0"></script>
+  <script src="app.js?v=16.0"></script>
   <script>
     if (window.lucide) lucide.createIcons();
+    // Privacy modal close handlers
+    const btnOpenPrivacy = document.getElementById('btnOpenPrivacyModal');
+    const btnClosePrivacy = document.getElementById('btnClosePrivacyModal');
+    const btnAcceptPrivacy = document.getElementById('btnAcceptPrivacy');
+    const privModal = document.getElementById('privacyModal');
+    if (btnOpenPrivacy && privModal) {
+      btnOpenPrivacy.addEventListener('click', () => privModal.classList.remove('hidden'));
+    }
+    if (btnClosePrivacy && privModal) {
+      btnClosePrivacy.addEventListener('click', () => privModal.classList.add('hidden'));
+    }
+    if (btnAcceptPrivacy && privModal) {
+      btnAcceptPrivacy.addEventListener('click', () => privModal.classList.add('hidden'));
+    }
   </script>
 </body>
 </html>
