@@ -819,7 +819,11 @@ async function connectBleDevice() {
   try {
     speak("Scanning for Third Eye hardware.");
     bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ name: 'ThirdEye' }],
+      filters: [
+        { name: 'ThirdEye' },
+        { namePrefix: 'Third' },
+        { services: [NUS_SERVICE_UUID] }
+      ],
       optionalServices: [NUS_SERVICE_UUID]
     });
     const server = await bleDevice.gatt.connect();
