@@ -121,12 +121,27 @@
       </div>
 
       <!-- Minimalist Voice Guidance Transcript (Voice First) -->
-      <p id="heroTranscript" class="text-base sm:text-lg font-black text-amber-300 text-center leading-snug mt-3 px-4 max-w-xs">
+      <p id="heroTranscript" class="text-base sm:text-lg font-black text-amber-300 text-center leading-snug mt-2 px-4 max-w-xs">
         "Watching ahead. Just speak anytime."
       </p>
 
+      <!-- Tactile Action Buttons for Blind / Low-Vision -->
+      <div class="flex items-center justify-center gap-2.5 mt-3 w-full max-w-xs z-20">
+        <!-- Read Text Button -->
+        <button id="btnReadText" type="button" aria-label="Read text in front of camera" class="flex-1 py-3 px-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i data-lucide="book-open" class="w-4 h-4 text-black"></i>
+          <span>Read Text</span>
+        </button>
+
+        <!-- Ask Question Button -->
+        <button id="btnAskVoice" type="button" aria-label="Ask co-pilot a question" class="flex-1 py-3 px-3 rounded-2xl bg-zinc-900 border-2 border-amber-400/80 text-amber-300 font-bold text-xs sm:text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i data-lucide="mic" class="w-4 h-4 text-amber-400"></i>
+          <span>Ask Question</span>
+        </button>
+      </div>
+
       <!-- Discreet Latency & SOS Hint -->
-      <div class="flex items-center justify-center gap-2.5 mt-2 text-[11px] font-mono text-zinc-500">
+      <div class="flex items-center justify-center gap-2.5 mt-2.5 text-[11px] font-mono text-zinc-500">
         <span id="latencyPill" class="text-emerald-400 font-bold">⚡ Low Latency</span>
         <span>•</span>
         <span class="text-zinc-400">Double-Tap: SOS</span>

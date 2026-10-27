@@ -13,6 +13,15 @@
 // ==========================================
 // 1. Mobile State
 // ==========================================
+// Check for URL key parameter (e.g. ?key=AIzaSy... or ?gemini_key=...)
+const urlParams = new URLSearchParams(window.location.search);
+const keyFromUrl = urlParams.get('key') || urlParams.get('gemini_key') || urlParams.get('apiKey');
+if (keyFromUrl) {
+  try {
+    localStorage.setItem('GEMINI_API_KEY', keyFromUrl.trim());
+  } catch (e) {}
+}
+
 const mobileState = {
   isAutonomousVisionActive: true,
   visionLoopTimer: null,
@@ -26,7 +35,7 @@ const mobileState = {
   isSpeaking: false,
   currentSpeechToken: 0,
 
-  geminiApiKey: localStorage.getItem('GEMINI_API_KEY') || '',
+  geminiApiKey: (keyFromUrl ? keyFromUrl.trim() : (localStorage.getItem('GEMINI_API_KEY') || '')),
   facingMode: 'environment', // Rear-facing camera by default
   cameraStream: null,
   videoTrack: null,
@@ -309,7 +318,7 @@ async function captureOptimizedFrame() {
 // ==========================================
 // 6. Gemini Flash API Execution Engine (Fast Sub-Second Call)
 // ==========================================
-async function callGeminiVision(promptText, base64Image) {
+async function callGeminiVision(promptText, base64Image, maxOutputTokens = 50) {
   if (!mobileState.geminiApiKey) {
     return { error: 'NO_API_KEY' };
   }
@@ -321,10 +330,10 @@ async function callGeminiVision(promptText, base64Image) {
 
   for (const model of models) {
     const abortCtrl = new AbortController();
-    const timer = setTimeout(() => abortCtrl.abort(), 6500); // 6.5s strict timeout
+    const timer = setTimeout(() => abortCtrl.abort(), 7500); // 7.5s strict timeout
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${mobileState.geminiApiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(mobileState.geminiApiKey)}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -343,7 +352,7 @@ async function callGeminiVision(promptText, base64Image) {
           }],
           generationConfig: {
             temperature: 0.1, // Ultra-deterministic, fast generation
-            maxOutputTokens: 40 // Short, concise output to eliminate lag
+            maxOutputTokens: maxOutputTokens // Dynamic: concise for navigation, comprehensive for reading
           }
         })
       });
@@ -355,6 +364,7 @@ async function callGeminiVision(promptText, base64Image) {
         break;
       } else if (data.error) {
         lastErr = data.error.message;
+        console.warn("Gemini API error:", data.error);
       }
     } catch (err) {
       clearTimeout(timer);
@@ -529,33 +539,55 @@ async function answerUserVisionQuestion(question) {
   vibrate([40, 30, 40]);
   updateTranscript(`"${question}"`);
 
+  // Explicit check for missing Gemini API key
+  if (!mobileState.geminiApiKey) {
+    mobileState.isProcessingAi = false;
+    speak("Please enter your Gemini API key in settings or through the link to enable reading text.");
+    if (mobileKeyModal) mobileKeyModal.classList.remove('hidden');
+    return;
+  }
+
+  const isReading = /\b(read|text|label|words|written|sign|document|book|letter|paper|page|screen|what does this say|what does it say)\b/i.test(question);
+
   try {
     const frame = await captureOptimizedFrame();
     if (!frame) {
-      speak("Camera getting ready, please ask again.");
+      speak("Camera getting ready, please try again in a moment.");
       return;
     }
 
-    if (!mobileState.geminiApiKey) {
-      speak(`Looking ahead. Current range is ${mobileState.currentDistance} centimeters. Walking path clear.`);
-      return;
+    let prompt = "";
+    let tokens = 60;
+
+    if (isReading) {
+      speak("Reading text...");
+      prompt = "You are an assistive reading eye for a visually impaired user. Read aloud all printed or handwritten text visible in this camera view clearly and completely. If you see signs, documents, packaging, prescription labels, book pages, or papers, read the text verbatim without summarizing. If no readable text is visible, say exactly: 'No readable text visible'.";
+      tokens = 500;
+    } else {
+      prompt = `The visually impaired user is asking: "${question}". Look at the camera view and answer in ONE direct, spoken sentence under 16 words. No conversational fluff.`;
+      tokens = 60;
     }
 
-    const prompt = `The visually impaired user is asking: "${question}". Look at the camera view and answer in ONE direct, spoken sentence under 14 words. No conversational fluff.`;
-
-    const result = await callGeminiVision(prompt, frame.base64);
+    const result = await callGeminiVision(prompt, frame.base64, tokens);
     frame.base64 = null;
 
     if (result.text) {
       const cleanAnswer = result.text.replace(/["*#]+/g, '').trim();
       updateTranscript(cleanAnswer, result.latencyMs);
       await speak(cleanAnswer);
+    } else if (result.error) {
+      if (/API_KEY_INVALID|key not valid|invalid api key/i.test(result.error)) {
+        speak("Your Gemini API key appears invalid. Please check settings.");
+        if (mobileKeyModal) mobileKeyModal.classList.remove('hidden');
+      } else {
+        speak("Unable to analyze text right now. Please hold steady and try again.");
+      }
     } else {
-      speak("Unable to see clearly. Please ask again.");
+      speak("Unable to see clearly. Please hold steady and try again.");
     }
   } catch (e) {
     console.warn("Question answer error:", e);
-    speak("Checking path. Ahead appears clear.");
+    speak("Vision check error, please try again.");
   } finally {
     mobileState.isProcessingAi = false;
   }
@@ -799,6 +831,44 @@ if (btnSaveKey) {
     if (mobileKeyModal) mobileKeyModal.classList.add('hidden');
     vibrate(50);
     speak(val ? "API key saved. Vision co-pilot ready." : "API key cleared.");
+  });
+}
+
+// Read Text & Ask Question Tactile Buttons
+const btnReadText = document.getElementById('btnReadText');
+const btnAskVoice = document.getElementById('btnAskVoice');
+
+if (btnReadText) {
+  btnReadText.addEventListener('click', (e) => {
+    e.stopPropagation();
+    vibrate(40);
+    answerUserVisionQuestion("Read text in front of me");
+  });
+}
+
+if (btnAskVoice) {
+  btnAskVoice.addEventListener('click', (e) => {
+    e.stopPropagation();
+    vibrate(40);
+    if (SpeechRecognition && recognition) {
+      speak("Listening. Ask your question now.");
+      try {
+        recognition.start();
+      } catch (err) {}
+    } else {
+      const q = window.prompt("Ask Third Eye (e.g. 'Read text', 'What is ahead?', 'What color is this?'):");
+      if (q && q.trim()) {
+        handleVoiceQuery(q.trim());
+      }
+    }
+  });
+}
+
+if (radarRing) {
+  radarRing.addEventListener('click', (e) => {
+    e.stopPropagation();
+    vibrate(40);
+    answerUserVisionQuestion("Read text in front of me");
   });
 }
 
